@@ -95,7 +95,7 @@ class MovieScan(dj.Computed):
     key_source = (fuse.ScanDone() & MovieScanCandidate & dict(segmentation_method=3,
                                                       spike_method=5) & 'animal_id < 19000').proj() + \
                  (fuse.ScanDone() & MovieScanCandidate & dict(segmentation_method=6,
-                                                      spike_method=5) & 'animal_id > 19000').proj()
+                                                      spike_method=5)).proj() 
 
     def _make_tuples(self, key):
         self.insert(fuse.ScanDone() & key, ignore_extra_fields=True)
@@ -103,11 +103,11 @@ class MovieScan(dj.Computed):
         pipe = dj.create_virtual_module(pipe, 'pipeline_' + pipe)
         if key['animal_id'] < 19000:
             self.Unit().insert(fuse.ScanDone * pipe.ScanSet.Unit * pipe.MaskClassification.Type & key
-                               & dict(pipe_version=1, segmentation_method=3, spike_method=5, type='soma'),
+                               & dict(type='soma'),
                                ignore_extra_fields=True)
         else:
             self.Unit().insert(fuse.ScanDone * pipe.ScanSet.Unit * pipe.MaskClassification.Type & key
-                               & dict(pipe_version=1, segmentation_method=6, spike_method=5, type='soma'),
+                               & dict(type='soma'),
                                ignore_extra_fields=True)
 
 
@@ -169,7 +169,7 @@ class ConditionTier(dj.Computed):
 
     def fill_up(self, tier, clips, cond, key, m):
         existing = ConditionTier().proj() & (self & dict(tier=tier)) \
-                   & (stimulus.Trial() * stimulus.Condition() & dict(key, **cond))
+                   & (stimulus.Trial() * stimulus.Condition() & dict(key, **cond)) & key
         n = len(existing)
         if n < m:
             # all hashes that are in clips but not registered for that animal and have the right tier
@@ -186,7 +186,7 @@ class ConditionTier(dj.Computed):
                 self.insert1(k, ignore_extra_fields=True)
 
         existing = ConditionTier().proj() & (self & dict(tier=tier)) \
-                   & (stimulus.Trial() * stimulus.Condition() & dict(key, **cond))
+                   & (stimulus.Trial() * stimulus.Condition() & dict(key, **cond)) & key
         n = len(existing)
         if n < m:
             keys = (clips - self).fetch(dj.key)
